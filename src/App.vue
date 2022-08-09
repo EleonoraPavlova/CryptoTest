@@ -18,9 +18,7 @@
                 placeholder="Например DOGE"
               />
             </div>
-            <div
-              class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
-            >
+            <div class="flex bg-white shadow-md p-1 rounded-md flex-wrap">
               <span
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
@@ -162,6 +160,8 @@
 export default {
   data() {
     return {
+      //props описывают данные, которые поступают на вход компоненты
+      //emits описывают те события, которые он генерирует
       ticker: "",
       tickers: [
         // { name: "USD", price: "45", id: 1 },   дефолтн значения
@@ -185,16 +185,19 @@ export default {
         );
         const data = await f.json();
         const finded = this.tickers.find((t) => t.name === currentTicker.name);
+
         if (data && data.USD && finded) {
           finded.price =
             data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
         }
+
         if (this.sel?.name === currentTicker.name) {
           this.graph.push(data.USD); //сохраним в график данные
         }
       }, 3000);
       this.ticker = ""; //очищается строка ввода после того, как ввели текст
     },
+
     select(ticker) {
       this.sel = ticker;
       this.graph = [];
@@ -203,12 +206,13 @@ export default {
       //удаляем тикет по клику кнопки удалить
       this.tickers.splice(index, 1);
     },
+
     normalizeGraph() {
-      if (!this.graph.length) {
+      if (!this.graph.length < 0) {
         return [];
       }
-      const maxValue = Math.max(...this.graph);
-      const minValue = Math.min(...this.graph);
+      const maxValue = Math.max(this.graph);
+      const minValue = Math.min(this.graph);
       return (
         this.graph.map((price) => 5 + (price - minValue) * 95) /
         (maxValue - minValue)
