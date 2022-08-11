@@ -6,5 +6,11 @@ import "./assets/app-style.css";
 import router from "./router";
 import store from "./store";
 import "./assets/tailwind.css";
+const app = createApp(App);
+app.directive("focus", {
+  mounted(el) {
+    el.focus();
+  },
+});
 
-createApp(App).use(store).use(router).mount("#app");
+app.use(store).use(router).mount("#app");
