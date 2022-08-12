@@ -7,9 +7,14 @@
             <LabelSearch />
             <div class="mt-1 relative rounded-md shadow-md">
               <InputSearch v-model="ticker" @keydown.enter="add" />
+              <div class="text-sm text-red-600" v-show="isVisible">
+                This ticker has already been added
+              </div>
             </div>
-            <ValueBox @currencySelected="onCurrencySelected" />
-            <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
+            <ValueBox
+              @currencySelected="onCurrencySelected"
+              :searchString="ticker"
+            />
           </div>
         </div>
         <ButtonAdd @click="add" />
@@ -54,6 +59,7 @@ export default {
     LabelSearch,
     InputSearch,
   },
+
   data() {
     return {
       //props описывают данные, которые поступают на вход компоненты
@@ -66,8 +72,14 @@ export default {
       ],
       selectInfo: null, //добавляем по клику на box выпадающую инфу , это {}
       graph: [], //данные состояния
+      isVisible: false,
     };
   },
+  // setup() {
+  //   const state = reactive({
+  //     searchResults: [],
+  //     noSearch: true,
+
   methods: {
     inputTicker(event) {
       //продолжение двухстороннего связывания input
@@ -76,6 +88,16 @@ export default {
     add() {
       if (!this.ticker) {
         //пустой билет не создавать
+        return;
+      }
+      //вывели надпись " This ticker has already been added" которая появл при условии уже наличия такого же билета
+      if (this.tickers.find((item) => item.name === this.ticker)) {
+        this.isVisible = true;
+        const that = this;
+        setTimeout(function () {
+          that.isVisible = false;
+        }, 5000);
+        this.ticker = "";
         return;
       }
       //обработчик click
@@ -109,8 +131,9 @@ export default {
       this.graph = [];
     },
     handleDelete(index) {
-      //удаляем тикет по клику кнопки удалить
+      //удаляем тикет по клику кнопки удалить и закрываем окно графика одновременно
       this.tickers.splice(index, 1);
+      this.selectInfo = null;
     },
     close() {
       this.selectInfo = null;
@@ -121,8 +144,7 @@ export default {
       }
       const maxValue = Math.max(...this.graph);
       const minValue = Math.min(...this.graph);
-      // /*eslint-disable*/
-      // debugger;
+
       return this.graph.map(
         (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
       );

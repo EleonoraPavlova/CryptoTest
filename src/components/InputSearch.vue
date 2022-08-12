@@ -3,6 +3,7 @@
     v-focus
     :value="modelValue"
     @input="updateInput"
+    autocomplete="off"
     type="text"
     name="wallet"
     id="wallet"
