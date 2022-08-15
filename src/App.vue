@@ -34,7 +34,7 @@
       <template v-if="tickers.length > 0">
         <hr class="w-full border-t border-gray-600 my-4" />
         <div class="flex">
-          <LabelJoint>Filter: <InputJoint /></LabelJoint>
+          <LabelJoint>Filter: test <InputJoint /></LabelJoint>
           <ButtonsVue class="button-margin">Forward</ButtonsVue>
           <ButtonsVue class="button-margin">Back</ButtonsVue>
         </div>
