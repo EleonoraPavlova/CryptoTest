@@ -1,6 +1,5 @@
 <template>
   <input
-    v-focus
     :value="modelValue"
     @input="updateInput"
     autocomplete="off"
@@ -14,7 +13,7 @@
 
 <script>
 export default {
-  name: "InputSearch",
+  name: "InputJoint",
   props: {
     modelValue: {
       type: String,

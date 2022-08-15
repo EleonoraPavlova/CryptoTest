@@ -1,12 +1,12 @@
 <template>
   <label for="wallet" class="block text-sm font-medium text-gray-700"
-    >Search</label
-  >
+    ><slot></slot
+  ></label>
 </template>
 
 <script>
 export default {
-  name: "LabelSearch",
+  name: "LabelJoint",
 };
 </script>
 

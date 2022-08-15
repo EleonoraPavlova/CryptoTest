@@ -1,25 +1,43 @@
 <template>
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
     <div class="container">
-      <section>
-        <div class="flex">
-          <div class="max-w-xs">
-            <LabelSearch />
-            <div class="mt-1 relative rounded-md shadow-md">
-              <InputSearch v-model="ticker" @keydown.enter="add" />
-              <div class="text-sm text-red-600" v-show="isVisible">
-                This ticker has already been added
-              </div>
+      <section class="flex">
+        <div class="max-w-xs">
+          <LabelJoint>Search</LabelJoint>
+          <div class="mt-1 relative rounded-md shadow-md">
+            <InputJoint v-focus v-model="ticker" @keydown.enter="add" />
+            <div class="text-sm text-red-600" v-show="isVisible">
+              This ticker has already been added
             </div>
-            <ValueBox
-              @currencySelected="onCurrencySelected"
-              :searchString="ticker"
-            />
           </div>
+          <ButtonsVue @click="add">
+            <svg
+              class="-ml-0.5 mr-2 h-6 w-6"
+              xmlns="http://www.w3.org/2000/svg"
+              width="30"
+              height="30"
+              viewBox="0 0 24 24"
+              fill="#ffffff"
+            >
+              <path
+                d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
+              ></path></svg
+            >Adds</ButtonsVue
+          >
+          <ValueBox
+            @currencySelected="onCurrencySelected"
+            :searchString="ticker"
+          />
         </div>
-        <ButtonAdd @click="add" />
       </section>
+
       <template v-if="tickers.length > 0">
+        <hr class="w-full border-t border-gray-600 my-4" />
+        <div class="flex">
+          <LabelJoint>Filter: <InputJoint /></LabelJoint>
+          <ButtonsVue class="button-margin">Forward</ButtonsVue>
+          <ButtonsVue class="button-margin">Back</ButtonsVue>
+        </div>
         <!-- скрыли верхнюю полоску -->
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
@@ -44,20 +62,20 @@
 </template>
 
 <script>
-import ButtonAdd from "./components/ButtonAdd.vue";
+import ButtonsVue from "./components/ButtonsVue.vue";
 import TickerBox from "./components/TickerBox.vue";
 import ValueBox from "./components/ValueBox.vue";
 import DropdownGraph from "./components/DropdownGraph.vue";
-import LabelSearch from "./components/LabelSearch.vue";
-import InputSearch from "./components/InputSearch.vue";
+import LabelJoint from "./components/LabelJoint.vue";
+import InputJoint from "./components/InputJoint.vue";
 export default {
   components: {
-    ButtonAdd,
+    ButtonsVue,
     TickerBox,
     ValueBox,
     DropdownGraph,
-    LabelSearch,
-    InputSearch,
+    LabelJoint,
+    InputJoint,
   },
 
   data() {

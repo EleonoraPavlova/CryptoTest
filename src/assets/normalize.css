@@ -347,3 +347,6 @@ template {
 [hidden] {
   display: none;
 }
+.button-margin{
+  margin: 0 20px;
+}
