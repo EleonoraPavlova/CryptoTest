@@ -73,17 +73,34 @@ export default {
       selectInfo: null, //добавляем по клику на box выпадающую инфу , это {}
       graph: [], //данные состояния
       isVisible: false,
+      timeId: null,
     };
   },
-  // setup() {
-  //   const state = reactive({
-  //     searchResults: [],
-  //     noSearch: true,
 
   methods: {
+    //методы используються если нужно обработчик на кнопку, input и тд
     inputTicker(event) {
       //продолжение двухстороннего связывания input
       this.ticker = event.target.value;
+    },
+    subscribeToUpdate(tickerName) {
+      //функция обновления загрузки данных курса валют после перезагрузки страницы(написали после того, как подключили localStorage)
+      setInterval(async () => {
+        const f = await fetch(
+          `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=27e0b4ea632ec5912ec5902491a1c30f21df3e642da1c82bae4d773a7969ce8a`
+        );
+        const data = await f.json();
+        const finded = this.tickers.find((t) => t.name === tickerName);
+
+        if (data && data.USD && finded) {
+          finded.price =
+            data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+        }
+
+        if (this.selectInfo?.name === tickerName) {
+          this.graph.push(data.USD); //сохраним в график данные
+        }
+      }, 3000);
     },
     add() {
       if (!this.ticker) {
@@ -107,22 +124,11 @@ export default {
       };
 
       this.tickers.push(currentTicker);
-      setInterval(async () => {
-        const f = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=27e0b4ea632ec5912ec5902491a1c30f21df3e642da1c82bae4d773a7969ce8a`
-        );
-        const data = await f.json();
-        const finded = this.tickers.find((t) => t.name === currentTicker.name);
 
-        if (data && data.USD && finded) {
-          finded.price =
-            data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
-        }
+      localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
+      // чтобы выбранные добавленные тикеры сохранялись после перезагрузки
+      this.subscribeToUpdate(currentTicker.name); // передаем функцию подписки
 
-        if (this.selectInfo?.name === currentTicker.name) {
-          this.graph.push(data.USD); //сохраним в график данные
-        }
-      }, 3000);
       this.ticker = ""; //очищается строка ввода после того, как ввели текст
     },
 
@@ -131,9 +137,10 @@ export default {
       this.graph = [];
     },
     handleDelete(index) {
-      //удаляем тикет по клику кнопки удалить и закрываем окно графика одновременно
+      //удаляем тикет по клику кнопки удалить и закрываем окно графика одновременно и останавливаем запросы API
       this.tickers.splice(index, 1);
       this.selectInfo = null;
+      clearInterval(this.timeId);
     },
     close() {
       this.selectInfo = null;
@@ -153,6 +160,17 @@ export default {
       this.ticker = clickedCurrency;
       this.add();
     },
+  },
+  created() {
+    //хук, чтобы работал localSrorage сохранял тикеты при обновлении
+    const tickersData = localStorage.getItem("cryptonomicon-list");
+    if (tickersData) {
+      this.tickers = JSON.parse(tickersData);
+      this.tickers.forEach((ticker) => {
+        //подписка на обновления после загрузки страницы, последний 3 шаг
+        this.subscribeToUpdate(ticker.name);
+      });
+    }
   },
 };
 </script>

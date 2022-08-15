@@ -38,6 +38,7 @@ export default {
     },
   },
   async created() {
+    // это хуки, вызываются автоматически все хуки!
     //выводим поиск по запросу fetch
     try {
       const response = await fetch(
@@ -54,8 +55,8 @@ export default {
   },
   computed: {
     filteredList() {
-      // /*eslint-disable*/
-      // debugger;
+      //сортируем и приводим до регистра нижнего
+
       if (!this.searchString) {
         return this.supportedCurrencies.slice(0, 4);
       } else {
