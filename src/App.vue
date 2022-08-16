@@ -5,7 +5,12 @@
         <div class="max-w-xs">
           <LabelJoint>Search</LabelJoint>
           <div class="mt-1 relative rounded-md shadow-md">
-            <InputJoint v-focus v-model="ticker" @keydown.enter="add" />
+            <InputJoint
+              v-focus
+              v-model="ticker"
+              @keydown.enter="add"
+              placeholder="Enter......"
+            />
             <div class="text-sm text-red-600" v-show="isVisible">
               This ticker has already been added
             </div>
@@ -33,16 +38,20 @@
 
       <template v-if="tickers.length > 0">
         <hr class="w-full border-t border-gray-600 my-4" />
-        <div class="flex">
-          <LabelJoint>Filter: test <InputJoint /></LabelJoint>
+        <div class="flex items-center">
+          <div class="flex-center">
+            <InputJoint v-model="filter" placeholder="Filters......" />
+          </div>
           <ButtonsVue class="button-margin">Forward</ButtonsVue>
           <ButtonsVue class="button-margin">Back</ButtonsVue>
         </div>
+
         <!-- скрыли верхнюю полоску -->
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <!-- выводим массив отфильтрованных тикеров -->
           <TickerBox
-            v-for="(t, index) in tickers"
+            v-for="(t, index) in filteredTickers()"
             :key="t.name"
             :isSelected="t === selectInfo"
             :ticker="t"
@@ -91,7 +100,8 @@ export default {
       selectInfo: null, //добавляем по клику на box выпадающую инфу , это {}
       graph: [], //данные состояния
       isVisible: false,
-      timeId: null,
+      filter: "",
+      intervals: {}, //очищение для останавл Api
     };
   },
 
@@ -101,9 +111,15 @@ export default {
       //продолжение двухстороннего связывания input
       this.ticker = event.target.value;
     },
+    filteredTickers() {
+      //фильтрация введеных пользователем данных
+      return this.tickers.filter((ticker) =>
+        ticker.name.toLowerCase().includes(this.filter.toLowerCase())
+      ); //фильтровать будем по соответствию
+    },
     subscribeToUpdate(tickerName) {
       //функция обновления загрузки данных курса валют после перезагрузки страницы(написали после того, как подключили localStorage)
-      setInterval(async () => {
+      this.intervals[tickerName] = setInterval(async () => {
         const f = await fetch(
           `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=27e0b4ea632ec5912ec5902491a1c30f21df3e642da1c82bae4d773a7969ce8a`
         );
@@ -142,6 +158,7 @@ export default {
       };
 
       this.tickers.push(currentTicker);
+      this.filter = ""; // при добавлении нового тикера сбрасывать фильтер,это обязательно!
 
       localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
       // чтобы выбранные добавленные тикеры сохранялись после перезагрузки
@@ -156,9 +173,11 @@ export default {
     },
     handleDelete(index) {
       //удаляем тикет по клику кнопки удалить и закрываем окно графика одновременно и останавливаем запросы API
+      const currencyName = this.tickers[index].name;
+      clearInterval(this.intervals[currencyName]);
       this.tickers.splice(index, 1);
+      localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers)); //удаляем так же из памяти локал, чтобы при обновлении удаленные тикеры тоже не показывались
       this.selectInfo = null;
-      clearInterval(this.timeId);
     },
     close() {
       this.selectInfo = null;
