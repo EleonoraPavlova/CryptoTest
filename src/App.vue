@@ -42,8 +42,18 @@
           <div class="flex-center">
             <InputJoint v-model="filter" placeholder="Filters......" />
           </div>
-          <ButtonsVue class="button-margin">Forward</ButtonsVue>
-          <ButtonsVue class="button-margin">Back</ButtonsVue>
+          <ButtonsVue
+            v-if="(page + 1) * limit < tickers.length"
+            @click="page = page + 1"
+            class="button-margin"
+            >Forward</ButtonsVue
+          >
+          <ButtonsVue
+            v-if="page != 0"
+            @click="page = page - 1"
+            class="button-margin"
+            >Back</ButtonsVue
+          >
         </div>
 
         <!-- скрыли верхнюю полоску -->
@@ -51,11 +61,11 @@
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <!-- выводим массив отфильтрованных тикеров -->
           <TickerBox
-            v-for="(t, index) in filteredTickers()"
+            v-for="t in filteredTickers"
             :key="t.name"
             :isSelected="t === selectInfo"
             :ticker="t"
-            @deleted="handleDelete(index)"
+            @deleted="handleDelete(t.name)"
             @selected="select(t)"
           />
         </dl>
@@ -91,17 +101,21 @@ export default {
     return {
       //props описывают данные, которые поступают на вход компоненты
       //emits описывают те события, которые он генерирует
-      ticker: "",
+      ticker: "", //элемент куда вводим данные (1 input)
       tickers: [
+        //массив добавленных тикеров
         // { name: "USD", price: "45", id: 1 },   дефолтн значения
         // { name: "EUR", price: "49", id: 2 },
         // { name: "UAH", price: "36", id: 3 },
       ],
       selectInfo: null, //добавляем по клику на box выпадающую инфу , это {}
-      graph: [], //данные состояния
+      graph: [], //данные состояния, массив потому что данные одного типа будут, если данные разного типа- то объект нужно выбирать
       isVisible: false,
-      filter: "",
-      intervals: {}, //очищение для останавл Api
+      filter: "", //для фильтра, элемент куда вводим данные (2 input)
+      intervals: {}, //очищение для останавл Api, создаем обьект потому что нужно очищать по ключу
+      //объект это как коробка с ячейками
+      page: 0,
+      limit: 6,
     };
   },
 
@@ -111,12 +125,7 @@ export default {
       //продолжение двухстороннего связывания input
       this.ticker = event.target.value;
     },
-    filteredTickers() {
-      //фильтрация введеных пользователем данных
-      return this.tickers.filter((ticker) =>
-        ticker.name.toLowerCase().includes(this.filter.toLowerCase())
-      ); //фильтровать будем по соответствию
-    },
+
     subscribeToUpdate(tickerName) {
       //функция обновления загрузки данных курса валют после перезагрузки страницы(написали после того, как подключили localStorage)
       this.intervals[tickerName] = setInterval(async () => {
@@ -171,13 +180,17 @@ export default {
       this.selectInfo = ticker;
       this.graph = [];
     },
-    handleDelete(index) {
+    handleDelete(name) {
+      const index = this.tickers.findIndex((ticker) => ticker.name === name);
       //удаляем тикет по клику кнопки удалить и закрываем окно графика одновременно и останавливаем запросы API
       const currencyName = this.tickers[index].name;
       clearInterval(this.intervals[currencyName]);
       this.tickers.splice(index, 1);
       localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers)); //удаляем так же из памяти локал, чтобы при обновлении удаленные тикеры тоже не показывались
       this.selectInfo = null;
+      if (this.filter.length === 0) {
+        return (this.filter = "");
+      }
     },
     close() {
       this.selectInfo = null;
@@ -208,6 +221,20 @@ export default {
         this.subscribeToUpdate(ticker.name);
       });
     }
+  },
+  computed: {
+    filteredTickers() {
+      //выводить элементы будем по 6 тикеров, значит 1 страница - 6 тикеров
+      const start = this.page * this.limit;
+      const end = start + this.limit;
+      //фильтрация введеных пользователем данных
+      const tickersFilter = this.tickers.filter((ticker) =>
+        ticker.name.toLowerCase().includes(this.filter.toLowerCase())
+      );
+      // /*eslint-disable*/
+      // debugger;
+      return tickersFilter.slice(start, end); //фильтровать будем по соответствию
+    },
   },
 };
 </script>
