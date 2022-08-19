@@ -40,20 +40,30 @@
         <hr class="w-full border-t border-gray-600 my-4" />
         <div class="flex items-center">
           <div class="flex-center">
-            <InputJoint v-model="filter" placeholder="Filters......" />
+            <InputJoint
+              @update:modelValue="page = 0"
+              v-model="filter"
+              placeholder="Filters......"
+            />
+            <!--  @update:modelValue="page = 0"   это чтобы поиск был по всем тикерам, а не по текуей странице -->
           </div>
-          <ButtonsVue
-            v-if="(page + 1) * limit < tickers.length"
-            @click="page = page + 1"
-            class="button-margin"
-            >Forward</ButtonsVue
-          >
           <ButtonsVue
             v-if="page != 0"
             @click="page = page - 1"
             class="button-margin"
             >Back</ButtonsVue
           >
+          <ButtonsVue
+            v-if="(page + 1) * limit < tickers.length"
+            @click="page = page + 1"
+            class="button-margin"
+            >Forward</ButtonsVue
+          >
+          <div class="flex button-margin">
+            <LabelJoint
+              >Page: {{ page + 1 }} of {{ countTotalPages }}</LabelJoint
+            >
+          </div>
         </div>
 
         <!-- скрыли верхнюю полоску -->
@@ -69,6 +79,7 @@
             @selected="select(t)"
           />
         </dl>
+        <div></div>
       </template>
       <DropdownGraph
         @closed="close"
@@ -116,6 +127,8 @@ export default {
       //объект это как коробка с ячейками
       page: 0,
       limit: 6,
+      totalPages: 0,
+      currentPage: false,
     };
   },
 
@@ -160,6 +173,7 @@ export default {
         this.ticker = "";
         return;
       }
+
       //обработчик click
       const currentTicker = {
         name: this.ticker,
@@ -210,6 +224,9 @@ export default {
       this.ticker = clickedCurrency;
       this.add();
     },
+    resetPagination() {
+      this.page = 0;
+    },
   },
   created() {
     //хук, чтобы работал localSrorage сохранял тикеты при обновлении
@@ -228,12 +245,21 @@ export default {
       const start = this.page * this.limit;
       const end = start + this.limit;
       //фильтрация введеных пользователем данных
+
       const tickersFilter = this.tickers.filter((ticker) =>
-        ticker.name.toLowerCase().includes(this.filter.toLowerCase())
+        ticker.name.toUpperCase().includes(this.filter.toUpperCase())
       );
-      // /*eslint-disable*/
-      // debugger;
+
       return tickersFilter.slice(start, end); //фильтровать будем по соответствию
+    },
+    countTotalPages() {
+      return Math.ceil(this.tickers.length / this.limit);
+    },
+  },
+  watch: {
+    //наблюдаю за изменениями фильтра, перескакиваю на первую страницу по результату буквы
+    filter() {
+      this.currentPage = true;
     },
   },
 };

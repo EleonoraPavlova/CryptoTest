@@ -1,6 +1,5 @@
 <template>
   <input
-    :value="modelValue"
     @input="updateInput"
     autocomplete="off"
     type="text"
