@@ -1,5 +1,6 @@
 <template>
   <input
+    :value="modelValue"
     @input="updateInput"
     autocomplete="off"
     type="text"
@@ -19,6 +20,7 @@ export default {
     },
   },
   emits: ["update:modelValue"],
+  // :value="modelValue" - очень важно, это двухсторонее связывание!
   methods: {
     updateInput(event) {
       this.$emit("update:modelValue", event.target.value);

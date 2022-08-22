@@ -40,13 +40,10 @@
         <hr class="w-full border-t border-gray-600 my-4" />
         <div class="flex items-center">
           <div class="flex-center">
-            <InputJoint
-              @update:modelValue="page = 0"
-              v-model="filter"
-              placeholder="Filters......"
-            />
+            <InputJoint v-model="filter" placeholder="Filters......" />
             <!--  @update:modelValue="page = 0"   это чтобы поиск был по всем тикерам, а не по текуей странице -->
           </div>
+
           <ButtonsVue
             v-if="page != 0"
             @click="page = page - 1"
@@ -78,6 +75,9 @@
             @deleted="handleDelete(t.name)"
             @selected="select(t)"
           />
+          <div class="text-sm text-green-600" v-if="!filteredTickers.length">
+            There are no such tickets!
+          </div>
         </dl>
         <div></div>
       </template>
@@ -122,13 +122,13 @@ export default {
       selectInfo: null, //добавляем по клику на box выпадающую инфу , это {}
       graph: [], //данные состояния, массив потому что данные одного типа будут, если данные разного типа- то объект нужно выбирать
       isVisible: false,
+      isVisibleTickers: false,
       filter: "", //для фильтра, элемент куда вводим данные (2 input)
       intervals: {}, //очищение для останавл Api, создаем обьект потому что нужно очищать по ключу
       //объект это как коробка с ячейками
       page: 0,
       limit: 6,
       totalPages: 0,
-      currentPage: false,
     };
   },
 
@@ -229,6 +229,18 @@ export default {
     },
   },
   created() {
+    //Object.entries(obj) – возвращает массив пар [ключ, значение].
+    const windowData = Object.fromEntries(
+      new URL(window.location).searchParams.entries()
+    );
+    if (windowData.filter) {
+      this.filter = windowData.filter;
+    }
+    if (windowData.page) {
+      this.page = +windowData.page;
+    }
+    // /*eslint-disable*/
+    // debugger;
     //хук, чтобы работал localSrorage сохранял тикеты при обновлении
     const tickersData = localStorage.getItem("cryptonomicon-list");
     if (tickersData) {
@@ -259,7 +271,21 @@ export default {
   watch: {
     //наблюдаю за изменениями фильтра, перескакиваю на первую страницу по результату буквы
     filter() {
-      this.currentPage = true;
+      this.page = 0;
+      //тут пытаемся сделать роутинг по урл без перезагрузки страницы, составляем путь
+      window.history.pushState(
+        null,
+        "CryptoCompare",
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+      );
+    },
+    page() {
+      window.history.pushState(
+        null,
+        "CryptoCompare",
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+        //{ page: this.page, filter: this.filter }
+      );
     },
   },
 };
