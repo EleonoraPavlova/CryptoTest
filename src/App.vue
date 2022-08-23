@@ -123,7 +123,6 @@ export default {
       selectInfo: null, //добавляем по клику на box выпадающую инфу , это {}
       graph: [], //данные состояния, массив потому что данные одного типа будут, если данные разного типа- то объект нужно выбирать
       isVisible: false,
-
       filter: "", //для фильтра, элемент куда вводим данные (2 input)
       intervals: {}, //очищение для останавл Api, создаем обьект потому что нужно очищать по ключу
       //объект это как коробка с ячейками
@@ -183,19 +182,12 @@ export default {
       this.tickers.push(currentTicker);
       this.filter = ""; // при добавлении нового тикера сбрасывать фильтер,это обязательно!
 
-      localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
-      // чтобы выбранные добавленные тикеры сохранялись после перезагрузки
       this.subscribeToUpdate(currentTicker.name); // передаем функцию подписки
       this.filter = "";
 
       this.ticker = ""; //очищается строка ввода после того, как ввели текст
     },
 
-    select(ticker) {
-      //выбираем тикер
-      this.selectInfo = ticker;
-      this.graph = [];
-    },
     handleDelete(name) {
       //удаление тикера
       const index = this.tickers.findIndex((ticker) => ticker.name === name);
@@ -203,17 +195,21 @@ export default {
       const currencyName = this.tickers[index].name;
       clearInterval(this.intervals[currencyName]);
       this.tickers.splice(index, 1);
-      localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers)); //удаляем так же из памяти локал, чтобы при обновлении удаленные тикеры тоже не показывались
       this.selectInfo = null;
       if (this.filter.length === 0) {
         this.filter = "";
       }
       if (this.page != 0 && this.filteredTickers.length === 0) {
+        // перебрасываем пользователя с пустой страицы на ту, где есть тикеры
         this.page--;
       }
     },
     close() {
       this.selectInfo = null;
+    },
+    select(ticker) {
+      //выбираем тикер
+      this.selectInfo = ticker;
     },
 
     onCurrencySelected(clickedCurrency) {
@@ -280,25 +276,38 @@ export default {
         (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
       );
     },
+    pageStateOptions() {
+      return {
+        filter: this.filter,
+        page: this.page,
+      };
+    },
   },
   watch: {
     //watch - следит за свойствами, и когда оно меняется, то выполняет функцию.
+    //можно не вызывать, сам вызывается когда меняется состояние свойства
+    //когда меняется тикер сбрасываем график
+    selectInfo() {
+      this.graph = [];
+    },
+    "tickers.length"() {
+      //когда меняются тикеры сохраняем тикеры в localStorage
+      localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
+    },
+
     //наблюдаю за изменениями фильтра, перескакиваю на первую страницу по результату буквы
     filter() {
+      //когда меняется фильтр, сбрасываем страницу на первую
       //filter / page похожи, они обновляют друг друга( чтобы была одинаковая информация)
       this.page = 0;
-      //тут пытаемся сделать роутинг по урл без перезагрузки страницы, составляем путь
-      window.history.pushState(
-        null,
-        "CryptoCompare",
-        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
-      );
     },
-    page() {
+    pageStateOptions(value) {
+      //когда меняются опции, которые я хочу сохранять в урл
       window.history.pushState(
         null,
         "CryptoCompare",
-        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+        //тут пытаемся сделать роутинг по урл без перезагрузки страницы, составляем путь
+        `${window.location.pathname}?filter=${value.filter}&page=${value.page}`
       );
     },
   },
