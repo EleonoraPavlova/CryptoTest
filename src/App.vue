@@ -43,24 +43,25 @@
             <InputJoint v-model="filter" placeholder="Filters......" />
             <!--  @update:modelValue="page = 0"   это чтобы поиск был по всем тикерам, а не по текуей странице -->
           </div>
-
-          <ButtonsVue
-            v-if="page != 0"
-            @click="page = page - 1"
-            class="button-margin"
-            >Back</ButtonsVue
-          >
-          <ButtonsVue
-            v-if="(page + 1) * limit < tickers.length"
-            @click="page = page + 1"
-            class="button-margin"
-            >Forward</ButtonsVue
-          >
-          <div class="flex button-margin">
-            <LabelJoint
-              >Page: {{ page + 1 }} of {{ countTotalPages }}</LabelJoint
+          <template v-if="filteredTickers.length > 0 && tickers.length > limit">
+            <ButtonsVue
+              v-if="page != 0"
+              @click="page = page - 1"
+              class="button-margin"
+              >Back</ButtonsVue
             >
-          </div>
+            <ButtonsVue
+              v-if="filteredTickers.length === limit"
+              @click="page = page + 1"
+              class="button-margin"
+              >Forward</ButtonsVue
+            >
+            <div class="flex button-margin">
+              <LabelJoint
+                >Page: {{ page + 1 }} of {{ countTotalPages }}</LabelJoint
+              >
+            </div>
+          </template>
         </div>
 
         <!-- скрыли верхнюю полоску -->
@@ -75,7 +76,7 @@
             @deleted="handleDelete(t.name)"
             @selected="select(t)"
           />
-          <div class="text-sm text-green-600" v-if="!filteredTickers.length">
+          <div class="text-sm text-green-600" v-show="!filteredTickers.length">
             There are no such tickets!
           </div>
         </dl>
@@ -85,7 +86,7 @@
         @closed="close"
         v-if="selectInfo"
         :selectInfo="selectInfo"
-        :barGraph="normalizeGraph()"
+        :barGraph="normalizedGraph"
       />
     </div>
   </div>
@@ -122,13 +123,12 @@ export default {
       selectInfo: null, //добавляем по клику на box выпадающую инфу , это {}
       graph: [], //данные состояния, массив потому что данные одного типа будут, если данные разного типа- то объект нужно выбирать
       isVisible: false,
-      isVisibleTickers: false,
+
       filter: "", //для фильтра, элемент куда вводим данные (2 input)
       intervals: {}, //очищение для останавл Api, создаем обьект потому что нужно очищать по ключу
       //объект это как коробка с ячейками
       page: 0,
       limit: 6,
-      totalPages: 0,
     };
   },
 
@@ -140,7 +140,7 @@ export default {
     },
 
     subscribeToUpdate(tickerName) {
-      //функция обновления загрузки данных курса валют после перезагрузки страницы(написали после того, как подключили localStorage)
+      //функция обновления тикеров курса валют после перезагрузки страницы(написали после того, как подключили localStorage)
       this.intervals[tickerName] = setInterval(async () => {
         const f = await fetch(
           `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=27e0b4ea632ec5912ec5902491a1c30f21df3e642da1c82bae4d773a7969ce8a`
@@ -186,15 +186,18 @@ export default {
       localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
       // чтобы выбранные добавленные тикеры сохранялись после перезагрузки
       this.subscribeToUpdate(currentTicker.name); // передаем функцию подписки
+      this.filter = "";
 
       this.ticker = ""; //очищается строка ввода после того, как ввели текст
     },
 
     select(ticker) {
+      //выбираем тикер
       this.selectInfo = ticker;
       this.graph = [];
     },
     handleDelete(name) {
+      //удаление тикера
       const index = this.tickers.findIndex((ticker) => ticker.name === name);
       //удаляем тикет по клику кнопки удалить и закрываем окно графика одновременно и останавливаем запросы API
       const currencyName = this.tickers[index].name;
@@ -203,23 +206,16 @@ export default {
       localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers)); //удаляем так же из памяти локал, чтобы при обновлении удаленные тикеры тоже не показывались
       this.selectInfo = null;
       if (this.filter.length === 0) {
-        return (this.filter = "");
+        this.filter = "";
+      }
+      if (this.page != 0 && this.filteredTickers.length === 0) {
+        this.page--;
       }
     },
     close() {
       this.selectInfo = null;
     },
-    normalizeGraph() {
-      if (this.graph.length < 2) {
-        return [];
-      }
-      const maxValue = Math.max(...this.graph);
-      const minValue = Math.min(...this.graph);
 
-      return this.graph.map(
-        (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
-      );
-    },
     onCurrencySelected(clickedCurrency) {
       this.ticker = clickedCurrency;
       this.add();
@@ -229,7 +225,8 @@ export default {
     },
   },
   created() {
-    //Object.entries(obj) – возвращает массив пар [ключ, значение].
+    //Object.entries(obj) – возвращает массив пар [ключ, значение]
+    //грузим данные из url
     const windowData = Object.fromEntries(
       new URL(window.location).searchParams.entries()
     );
@@ -252,6 +249,7 @@ export default {
     }
   },
   computed: {
+    // вычисляет значение свойства, которое может зависеть от других свойств, но делает это лишь тогда, когда какое-то из них изменилось.
     filteredTickers() {
       //выводить элементы будем по 6 тикеров, значит 1 страница - 6 тикеров
       const start = this.page * this.limit;
@@ -267,10 +265,27 @@ export default {
     countTotalPages() {
       return Math.ceil(this.tickers.length / this.limit);
     },
+    normalizedGraph() {
+      if (this.graph.length < 2) {
+        return [];
+      }
+      const maxValue = Math.max(...this.graph);
+      const minValue = Math.min(...this.graph);
+      if (maxValue === minValue) {
+        //оптимизация работы графика и среднее зечение 50
+        return this.graph.map(() => 50);
+      }
+
+      return this.graph.map(
+        (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
+      );
+    },
   },
   watch: {
+    //watch - следит за свойствами, и когда оно меняется, то выполняет функцию.
     //наблюдаю за изменениями фильтра, перескакиваю на первую страницу по результату буквы
     filter() {
+      //filter / page похожи, они обновляют друг друга( чтобы была одинаковая информация)
       this.page = 0;
       //тут пытаемся сделать роутинг по урл без перезагрузки страницы, составляем путь
       window.history.pushState(
@@ -284,7 +299,6 @@ export default {
         null,
         "CryptoCompare",
         `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
-        //{ page: this.page, filter: this.filter }
       );
     },
   },
