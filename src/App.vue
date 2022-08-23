@@ -93,6 +93,7 @@
 </template>
 
 <script>
+import { loadTickers } from "./api";
 import ButtonsVue from "./components/ButtonsVue.vue";
 import TickerBox from "./components/TickerBox.vue";
 import ValueBox from "./components/ValueBox.vue";
@@ -137,25 +138,17 @@ export default {
       //продолжение двухстороннего связывания input
       this.ticker = event.target.value;
     },
-
-    subscribeToUpdate(tickerName) {
+    async updateTickers() {
+      if (!this.tickers.length) {
+        return;
+      }
       //функция обновления тикеров курса валют после перезагрузки страницы(написали после того, как подключили localStorage)
-      this.intervals[tickerName] = setInterval(async () => {
-        const f = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=27e0b4ea632ec5912ec5902491a1c30f21df3e642da1c82bae4d773a7969ce8a`
-        );
-        const data = await f.json();
-        const finded = this.tickers.find((t) => t.name === tickerName);
+      const exchangeData = await loadTickers(this.tickers.map((t) => t.name));
 
-        if (data && data.USD && finded) {
-          finded.price =
-            data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
-        }
-
-        if (this.selectInfo?.name === tickerName) {
-          this.graph.push(data.USD); //сохраним в график данные
-        }
-      }, 3000);
+      this.tickers.forEach((ticker) => {
+        let price = exchangeData[ticker.name.toUpperCase()];
+        ticker.price = price ?? "-";
+      });
     },
     add() {
       if (!this.ticker) {
@@ -182,7 +175,7 @@ export default {
       this.tickers.push(currentTicker);
       this.filter = ""; // при добавлении нового тикера сбрасывать фильтер,это обязательно!
 
-      this.subscribeToUpdate(currentTicker.name); // передаем функцию подписки
+      this.updateTickers(currentTicker.name); // передаем функцию подписки
       this.filter = "";
 
       this.ticker = ""; //очищается строка ввода после того, как ввели текст
@@ -232,15 +225,14 @@ export default {
     if (windowData.page) {
       this.page = +windowData.page;
     }
-    // /*eslint-disable*/
-    // debugger;
+
     //хук, чтобы работал localSrorage сохранял тикеты при обновлении
     const tickersData = localStorage.getItem("cryptonomicon-list");
     if (tickersData) {
       this.tickers = JSON.parse(tickersData);
       this.tickers.forEach((ticker) => {
         //подписка на обновления после загрузки страницы, последний 3 шаг
-        this.subscribeToUpdate(ticker.name);
+        this.updateTickers(ticker.name);
       });
     }
   },

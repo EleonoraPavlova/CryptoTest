@@ -12,7 +12,7 @@
         {{ ticker.name }} - USD
       </dt>
       <dd class="mt-1 text-3xl font-semibold text-gray-900">
-        {{ ticker.price }}
+        {{ formatPrice(ticker.price) }}
       </dd>
     </div>
     <div class="w-full border-t border-gray-200"></div>
@@ -22,6 +22,7 @@
 </template>
 
 <script>
+import formatPrice from "./formatPrice";
 import ButtonDelete from "./ButtonDelete.vue";
 export default {
   components: {
@@ -38,6 +39,9 @@ export default {
     },
   },
   emits: ["deleted", "selected"],
+  methods: {
+    formatPrice,
+  },
 };
 </script>
 
