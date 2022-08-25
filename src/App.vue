@@ -56,7 +56,10 @@
               class="button-margin"
               >Forward</ButtonsVue
             >
-            <div class="flex button-margin">
+            <div
+              v-if="filteredTickers.length === limit"
+              class="flex button-margin"
+            >
               <LabelJoint
                 >Page: {{ page + 1 }} of {{ countTotalPages }}</LabelJoint
               >
@@ -94,6 +97,7 @@
 
 <script>
 import { loadTickers } from "./api";
+
 import ButtonsVue from "./components/ButtonsVue.vue";
 import TickerBox from "./components/TickerBox.vue";
 import ValueBox from "./components/ValueBox.vue";
